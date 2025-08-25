@@ -1,0 +1,195 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String
+  password      String?
+  avatar        String?
+  subscription  String    @default("free") // 'free', 'premium', 'pro'
+  role          String    @default("user") // 'user', 'creator', 'admin'
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Stripe-related fields
+  stripeCustomerId      String?   @unique
+  stripeSubscriptionId  String?   @unique
+  subscriptionStatus    String?   // 'active', 'canceled', 'incomplete', etc.
+  subscriptionCurrentPeriodEnd DateTime?
+  
+  // Relations
+  articles      Article[]
+  topicSuggestions TopicSuggestion[]
+  votes         Vote[]
+  reactions     Reaction[]
+  aiPrompts     AIPrompt[]
+  
+  @@map("users")
+}
+
+model Article {
+  id                String    @id @default(cuid())
+  title             String
+  content           String
+  summary           String
+  category          String
+  tags              String[]
+  author            String
+  authorType        String    // 'ai' or 'human'
+  biasScore         Float     @default(0)
+  viewCount         Int       @default(0)
+  likes             Int       @default(0)
+  shares            Int       @default(0)
+  sourceUrl         String?
+  imageUrl          String?
+  readTime          Int       // in minutes
+  isExclusive       Boolean   @default(false)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relations
+  authorId          String?
+  authorUser        User?     @relation(fields: [authorId], references: [id])
+  shorts            Short[]
+  historicalComparisons HistoricalComparison[]
+  reactions         Reaction[]
+  
+  @@map("articles")
+}
+
+model Short {
+  id            String    @id @default(cuid())
+  title         String
+  description   String
+  videoUrl      String
+  thumbnailUrl  String
+  duration      Int       // in seconds
+  category      String
+  tags          String[]
+  viewCount     Int       @default(0)
+  likes         Int       @default(0)
+  shares        Int       @default(0)
+  createdAt     DateTime  @default(now())
+  
+  // Relations
+  articleId     String
+  article       Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  reactions     Reaction[]
+  
+  @@map("shorts")
+}
+
+model HistoricalComparison {
+  id            String    @id @default(cuid())
+  title         String
+  description   String
+  year          Int
+  relevanceScore Float
+  sourceUrl     String?
+  
+  // Relations
+  articleId     String
+  article       Article   @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  
+  @@map("historical_comparisons")
+}
+
+model Category {
+  id            String    @id @default(cuid())
+  name          String    @unique
+  slug          String    @unique
+  description   String
+  icon          String
+  color         String
+  articleCount  Int       @default(0)
+  
+  @@map("categories")
+}
+
+model TopicSuggestion {
+  id            String    @id @default(cuid())
+  title         String
+  description   String
+  votes         Int       @default(0)
+  status        String    @default("pending") // 'pending', 'approved', 'rejected', 'in-progress'
+  createdAt     DateTime  @default(now())
+  
+  // Relations
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  userVotes     Vote[]
+  
+  @@map("topic_suggestions")
+}
+
+model Vote {
+  id            String    @id @default(cuid())
+  type          String    // 'up' or 'down'
+  createdAt     DateTime  @default(now())
+  
+  // Relations
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  suggestionId  String
+  suggestion    TopicSuggestion @relation(fields: [suggestionId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, suggestionId])
+  @@map("votes")
+}
+
+model Reaction {
+  id            String    @id @default(cuid())
+  type          String    // 'like', 'share', 'save', 'bias-report'
+  contentType   String    // 'article' or 'short'
+  createdAt     DateTime  @default(now())
+  
+  // Relations
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  articleId     String?
+  article       Article?  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  shortId       String?
+  short         Short?    @relation(fields: [shortId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, articleId, type])
+  @@unique([userId, shortId, type])
+  @@map("reactions")
+}
+
+model AIPrompt {
+  id            String    @id @default(cuid())
+  title         String
+  content       String
+  type          String    // 'article', 'short', 'analysis'
+  isPublic      Boolean   @default(false)
+  usageCount    Int       @default(0)
+  createdAt     DateTime  @default(now())
+  
+  // Relations
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  
+  @@map("ai_prompts")
+}
+
+model Analytics {
+  id            String    @id @default(cuid())
+  date          DateTime  @default(now())
+  totalViews    Int       @default(0)
+  totalShares   Int       @default(0)
+  totalLikes    Int       @default(0)
+  userGrowth    Int       @default(0)
+  
+  @@unique([date])
+  @@map("analytics")
+}

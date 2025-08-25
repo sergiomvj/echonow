@@ -1,0 +1,77 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "npm install && npx prisma generate && npm run build",
+    "watchPatterns": [
+      "**/*.ts",
+      "**/*.tsx", 
+      "**/*.js",
+      "**/*.jsx",
+      "package.json",
+      "prisma/schema.prisma"
+    ]
+  },
+  "deploy": {
+    "startCommand": "npm start",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  },
+  "environments": {
+    "production": {
+      "variables": {
+        "NODE_ENV": "production",
+        "DATABASE_URL": "${{DATABASE_URL}}",
+        "NEXTAUTH_SECRET": "${{NEXTAUTH_SECRET}}",
+        "NEXTAUTH_URL": "${{RAILWAY_STATIC_URL}}",
+        "OPENAI_API_KEY": "${{OPENAI_API_KEY}}",
+        "ELEVENLABS_API_KEY": "${{ELEVENLABS_API_KEY}}",
+        "STRIPE_SECRET_KEY": "${{STRIPE_SECRET_KEY}}",
+        "STRIPE_PUBLISHABLE_KEY": "${{STRIPE_PUBLISHABLE_KEY}}",
+        "STRIPE_WEBHOOK_SECRET": "${{STRIPE_WEBHOOK_SECRET}}",
+        "GOOGLE_CLIENT_ID": "${{GOOGLE_CLIENT_ID}}",
+        "GOOGLE_CLIENT_SECRET": "${{GOOGLE_CLIENT_SECRET}}",
+        "GITHUB_CLIENT_ID": "${{GITHUB_CLIENT_ID}}",
+        "GITHUB_CLIENT_SECRET": "${{GITHUB_CLIENT_SECRET}}"
+      }
+    },
+    "staging": {
+      "variables": {
+        "NODE_ENV": "development",
+        "DATABASE_URL": "${{STAGING_DATABASE_URL}}",
+        "NEXTAUTH_SECRET": "${{STAGING_NEXTAUTH_SECRET}}",
+        "NEXTAUTH_URL": "${{RAILWAY_STATIC_URL}}",
+        "OPENAI_API_KEY": "${{STAGING_OPENAI_API_KEY}}",
+        "ELEVENLABS_API_KEY": "${{STAGING_ELEVENLABS_API_KEY}}",
+        "STRIPE_SECRET_KEY": "${{STAGING_STRIPE_SECRET_KEY}}",
+        "STRIPE_PUBLISHABLE_KEY": "${{STAGING_STRIPE_PUBLISHABLE_KEY}}",
+        "STRIPE_WEBHOOK_SECRET": "${{STAGING_STRIPE_WEBHOOK_SECRET}}"
+      }
+    }
+  },
+  "services": [
+    {
+      "name": "echonow-web",
+      "source": {
+        "type": "git",
+        "repo": "echonow-platform",
+        "branch": "main"
+      },
+      "variables": {
+        "PORT": 3000
+      }
+    },
+    {
+      "name": "echonow-db",
+      "source": {
+        "type": "postgresql",
+        "image": "postgres:15"
+      },
+      "variables": {
+        "POSTGRES_DB": "echonow",
+        "POSTGRES_USER": "echonow",
+        "POSTGRES_PASSWORD": "${{DB_PASSWORD}}"
+      }
+    }
+  ]
+}

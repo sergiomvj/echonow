@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: echonow
+      POSTGRES_PASSWORD: echonow_dev_password
+      POSTGRES_DB: echonow_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    networks:
+      - echonow-network
+
+  # Redis for caching (optional)
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - echonow-network
+
+  # EchoNow Web Application
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://echonow:echonow_dev_password@db:5432/echonow_dev
+      - NEXTAUTH_SECRET=your-development-secret-key
+      - NEXTAUTH_URL=http://localhost:3000
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - echonow-network
+    command: sh -c "npx prisma migrate deploy && npm run dev"
+
+  # Prisma Studio (optional, for database management)
+  prisma-studio:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5555:5555"
+    environment:
+      - DATABASE_URL=postgresql://echonow:echonow_dev_password@db:5432/echonow_dev
+    depends_on:
+      - db
+    volumes:
+      - .:/app
+    networks:
+      - echonow-network
+    command: npx prisma studio --hostname 0.0.0.0
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  echonow-network:
+    driver: bridge
