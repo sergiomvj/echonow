@@ -1,26 +1,118 @@
 import { withAuth } from 'next-auth/middleware'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { headers } from 'next/headers'
+
+// Rate limiting configuration
+const RATE_LIMIT = {
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  maxRequests: 100,
+  message: 'Too many requests, please try again later'
+}
+
+// Simple in-memory rate limiter (use Redis in production)
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>()
+
+function rateLimit(req: NextRequest): boolean {
+  const ip = req.ip || req.headers.get('x-forwarded-for') || 'unknown'
+  const now = Date.now()
+  const key = `${ip}:${req.nextUrl.pathname}`
+  
+  const record = rateLimitMap.get(key)
+  
+  if (!record) {
+    rateLimitMap.set(key, { count: 1, resetTime: now + RATE_LIMIT.windowMs })
+    return true
+  }
+  
+  if (now > record.resetTime) {
+    record.count = 1
+    record.resetTime = now + RATE_LIMIT.windowMs
+    return true
+  }
+  
+  if (record.count >= RATE_LIMIT.maxRequests) {
+    return false
+  }
+  
+  record.count++
+  return true
+}
 
 export default withAuth(
-  function middleware(req) {
-    const { pathname } = req.nextUrl
+  function middleware(req: NextRequest & { nextauth: { token: any } }) {
+    const { pathname, origin } = req.nextUrl
     const token = req.nextauth.token
+
+    // Apply rate limiting to API routes
+    if (pathname.startsWith('/api/')) {
+      if (!rateLimit(req)) {
+        return new NextResponse(
+          JSON.stringify({ error: RATE_LIMIT.message }),
+          {
+            status: 429,
+            headers: {
+              'Content-Type': 'application/json',
+              'Retry-After': '900' // 15 minutes
+            }
+          }
+        )
+      }
+    }
+
+    // Security headers
+    const response = NextResponse.next()
+    
+    // Add security headers
+    response.headers.set('X-Frame-Options', 'DENY')
+    response.headers.set('X-Content-Type-Options', 'nosniff')
+    response.headers.set('Referrer-Policy', 'origin-when-cross-origin')
+    response.headers.set('X-XSS-Protection', '1; mode=block')
+    response.headers.set(
+      'Permissions-Policy',
+      'camera=(), microphone=(), geolocation=()'
+    )
+    response.headers.set(
+      'Strict-Transport-Security',
+      'max-age=31536000; includeSubDomains'
+    )
+
+    // CORS for API routes
+    if (pathname.startsWith('/api/')) {
+      response.headers.set('Access-Control-Allow-Origin', origin)
+      response.headers.set(
+        'Access-Control-Allow-Methods',
+        'GET, POST, PUT, DELETE, OPTIONS'
+      )
+      response.headers.set(
+        'Access-Control-Allow-Headers',
+        'Content-Type, Authorization, X-Requested-With'
+      )
+      response.headers.set('Access-Control-Allow-Credentials', 'true')
+    }
+
+    // Handle CORS preflight requests
+    if (req.method === 'OPTIONS') {
+      return new Response(null, { status: 200, headers: response.headers })
+    }
 
     // Protected routes that require authentication
     const protectedRoutes = [
       '/creator',
-      '/premium',
+      '/premium/success',
+      '/premium/manage',
       '/profile',
+      '/settings',
       '/api/user',
       '/api/content',
-      '/api/ai'
+      '/api/ai',
+      '/api/subscriptions'
     ]
 
     // Creator-only routes
-    const creatorRoutes = ['/creator']
+    const creatorRoutes = ['/creator', '/admin']
     
     // Premium routes (premium or pro subscription required)
-    const premiumRoutes = ['/premium/features', '/api/ai/premium']
+    const premiumRoutes = ['/premium/features', '/api/ai/premium', '/api/content/premium']
     
     // Admin routes
     const adminRoutes = ['/admin', '/api/admin']
@@ -29,7 +121,9 @@ export default withAuth(
     const requiresAuth = protectedRoutes.some(route => pathname.startsWith(route))
     
     if (requiresAuth && !token) {
-      return NextResponse.redirect(new URL('/auth/signin', req.url))
+      const signInUrl = new URL('/auth/signin', req.url)
+      signInUrl.searchParams.set('callbackUrl', pathname)
+      return NextResponse.redirect(signInUrl)
     }
 
     if (token) {
@@ -47,7 +141,7 @@ export default withAuth(
         }
       }
 
-      // Check admin access
+      // Check admin access  
       if (adminRoutes.some(route => pathname.startsWith(route))) {
         if (token.role !== 'admin') {
           return NextResponse.redirect(new URL('/', req.url))
@@ -55,11 +149,11 @@ export default withAuth(
       }
     }
 
-    return NextResponse.next()
+    return response
   },
   {
     callbacks: {
-      authorized: ({ token, req }) => {
+      authorized: ({ token, req }: { token: any; req: NextRequest }) => {
         const { pathname } = req.nextUrl
         
         // Always allow access to public routes

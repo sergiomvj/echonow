@@ -1,5 +1,7 @@
 'use client'
 
+// Fixed lucide-react import issues
+
 import { useState } from 'react'
 import Layout from '@/components/layout/Layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -27,8 +29,7 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Progress,
-  Vote,
+  BarChart3,
   UserCheck,
   Zap,
   Crown,
@@ -147,7 +148,7 @@ export default function ParticipatePage() {
     switch (status) {
       case 'approved': return <CheckCircle className="h-4 w-4 text-green-500" />
       case 'rejected': return <XCircle className="h-4 w-4 text-red-500" />
-      case 'in-progress': return <Progress className="h-4 w-4 text-echo-cyan" />
+      case 'in-progress': return <BarChart3 className="h-4 w-4 text-echo-cyan" />
       default: return <AlertCircle className="h-4 w-4 text-yellow-500" />
     }
   }
@@ -269,7 +270,7 @@ export default function ParticipatePage() {
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
-                <Vote className="h-4 w-4 mr-2 inline" />
+                <BarChart3 className="h-4 w-4 mr-2 inline" />
                 Votação
               </button>
               <button

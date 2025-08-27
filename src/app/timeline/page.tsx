@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import dynamic from 'next/dynamic'
 import Layout from '@/components/layout/Layout'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -26,7 +27,6 @@ import {
   Users,
   Zap,
   History,
-  Timeline,
   Repeat
 } from 'lucide-react'
 
@@ -225,11 +225,11 @@ export default function TimelinePage() {
   }
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    })
+    // Use consistent formatting to avoid server/client hydration mismatches
+    const year = date.getFullYear()
+    const month = date.toLocaleDateString('en-US', { month: 'short' })
+    const day = date.getDate().toString().padStart(2, '0')
+    return `${day} ${month} ${year}`
   }
 
   const calculateDaysAgo = (date: Date) => {
@@ -237,6 +237,11 @@ export default function TimelinePage() {
     const diffTime = Math.abs(now.getTime() - date.getTime())
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
     return diffDays
+  }
+
+  // Component for client-only content to prevent hydration issues
+  const ClientOnlyText = ({ children }: { children: React.ReactNode }) => {
+    return <span suppressHydrationWarning>{children}</span>
   }
 
   return (
@@ -247,7 +252,7 @@ export default function TimelinePage() {
           <div className="max-w-4xl mx-auto text-center">
             <div className="flex justify-center mb-6">
               <div className="flex items-center space-x-2 bg-gradient-to-r from-echo-cyan/20 to-echo-amber/20 px-4 py-2 rounded-full">
-                <Timeline className="h-5 w-5 text-echo-cyan" />
+                <Clock className="h-5 w-5 text-echo-cyan" />
                 <span className="text-sm font-medium">Análise Temporal</span>
               </div>
             </div>
@@ -391,7 +396,7 @@ export default function TimelinePage() {
                                     </Badge>
                                   </div>
                                   <p className="text-sm text-muted-foreground">
-                                    <strong>{event.modernParallel.title}</strong> • {formatDate(event.modernParallel.date)}
+                                    <strong>{event.modernParallel.title}</strong> • <ClientOnlyText><span>{formatDate(event.modernParallel.date)}</span></ClientOnlyText>
                                   </p>
                                 </div>
                               )}
@@ -400,7 +405,9 @@ export default function TimelinePage() {
                               <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                                 <span className="flex items-center">
                                   <Eye className="h-3 w-3 mr-1" />
-                                  {(event.stats.views / 1000).toFixed(1)}K views
+                                  <ClientOnlyText>
+                                    <span>{(event.stats.views / 1000).toFixed(1)}K views</span>
+                                  </ClientOnlyText>
                                 </span>
                                 <span className="flex items-center">
                                   <Heart className="h-3 w-3 mr-1" />
@@ -414,12 +421,16 @@ export default function TimelinePage() {
                             </div>
 
                             <div className="text-right">
-                              <div className="text-sm font-medium">
-                                {formatDate(event.date)}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {calculateDaysAgo(event.date)} dias atrás
-                              </div>
+                              <ClientOnlyText>
+                                <div className="text-sm font-medium">
+                                  {formatDate(event.date)}
+                                </div>
+                              </ClientOnlyText>
+                              <ClientOnlyText>
+                                <div className="text-xs text-muted-foreground">
+                                  {calculateDaysAgo(event.date)} dias atrás
+                                </div>
+                              </ClientOnlyText>
                             </div>
                           </div>
 
@@ -497,9 +508,11 @@ export default function TimelinePage() {
                       <Card key={event.id} className="p-4">
                         <div className="flex justify-between items-start mb-2">
                           <Badge variant="outline">{event.category}</Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {formatDate(event.date)}
-                          </span>
+                          <ClientOnlyText>
+                            <span className="text-xs text-muted-foreground">
+                              {formatDate(event.date)}
+                            </span>
+                          </ClientOnlyText>
                         </div>
                         <h3 className="font-semibold mb-2">{event.title}</h3>
                         <p className="text-sm text-muted-foreground">
@@ -520,9 +533,11 @@ export default function TimelinePage() {
                             <Badge variant="secondary" className="text-xs">
                               {event.modernParallel.similarity}% similar
                             </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              {formatDate(event.modernParallel.date)}
-                            </span>
+                            <ClientOnlyText>
+                              <span className="text-xs text-muted-foreground">
+                                {formatDate(event.modernParallel.date)}
+                              </span>
+                            </ClientOnlyText>
                           </div>
                           <h3 className="font-semibold mb-2">{event.modernParallel.title}</h3>
                           <p className="text-sm text-muted-foreground">

@@ -62,29 +62,109 @@
 }
 
 @layer components {
+  /* Card components with responsive behavior */
   .echo-card {
     @apply bg-card border border-border rounded-lg shadow-sm;
     @apply dark:bg-white/5 dark:border-white/10;
+    @apply transition-all duration-200 hover:shadow-md;
   }
   
+  .echo-card-hover {
+    @apply echo-card hover:shadow-card-hover hover:-translate-y-1;
+  }
+  
+  /* Button components */
   .echo-button {
     @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors;
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
     @apply disabled:opacity-50 disabled:pointer-events-none;
   }
 
+  /* Text utilities */
   .echo-gradient-text {
     @apply bg-gradient-to-r from-echo-cyan to-echo-amber bg-clip-text text-transparent;
   }
 
+  /* Glass morphism effects */
   .echo-blur-card {
     @apply backdrop-blur-md bg-white/10 border border-white/20 rounded-xl;
   }
+  
+  .echo-glass {
+    @apply backdrop-blur-md bg-white/5 border border-white/10;
+  }
+
+  /* Responsive container */
+  .echo-container {
+    @apply mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl;
+  }
+  
+  /* Responsive grid layouts */
+  .echo-grid {
+    @apply grid gap-4 sm:gap-6 lg:gap-8;
+  }
+  
+  .echo-grid-responsive {
+    @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6;
+  }
+  
+  /* Article grid */
+  .echo-article-grid {
+    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
+  }
+  
+  /* Mobile-first navigation */
+  .echo-nav-mobile {
+    @apply fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t border-border;
+    @apply md:hidden;
+  }
+  
+  .echo-nav-desktop {
+    @apply hidden md:flex;
+  }
+  
+  /* Form styling */
+  .echo-form-group {
+    @apply space-y-2;
+  }
+  
+  .echo-input {
+    @apply w-full rounded-md border border-input bg-background px-3 py-2;
+    @apply text-sm focus:outline-none focus:ring-2 focus:ring-echo-cyan;
+    @apply placeholder:text-muted-foreground;
+  }
+  
+  /* Typography scale */
+  .echo-heading-1 {
+    @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold font-space-grotesk;
+  }
+  
+  .echo-heading-2 {
+    @apply text-2xl sm:text-3xl md:text-4xl font-bold font-space-grotesk;
+  }
+  
+  .echo-heading-3 {
+    @apply text-xl sm:text-2xl md:text-3xl font-semibold font-space-grotesk;
+  }
+  
+  .echo-body {
+    @apply text-sm sm:text-base leading-relaxed;
+  }
+  
+  .echo-caption {
+    @apply text-xs sm:text-sm text-muted-foreground;
+  }
 }
 
-/* Custom scrollbar */
+/* Responsive scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
+}
+
+@media (min-width: 768px) {
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
 }
 
 ::-webkit-scrollbar-track {
@@ -98,6 +178,98 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #F9A825;
+}
+
+/* Mobile touch improvements */
+@media (max-width: 768px) {
+  /* Larger touch targets */
+  button, a, input, select, textarea {
+    min-height: 44px;
+  }
+  
+  /* Better text readability */
+  body {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  
+  /* Prevent zoom on input focus */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Focus management for accessibility */
+.focus-trap {
+  @apply focus:outline-none focus:ring-2 focus:ring-echo-cyan focus:ring-offset-2;
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .echo-card {
+    @apply border-2;
+  }
+  
+  button {
+    @apply border-2 border-current;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .echo-card {
+    border: 1px solid #ccc !important;
+    background: white !important;
+  }
+}
+
+/* Animation utilities */
+.animate-fade-in-up {
+  animation: fade-in-up 0.6s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.4s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s ease-out;
+}
+
+/* Intersection observer animations */
+.animate-on-scroll {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.animate-on-scroll.in-view {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* Smooth animations */

@@ -1,15 +1,25 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   experimental: {
-    appDir: true,
     serverComponentsExternalPackages: ['@prisma/client'],
   },
   images: {
-    domains: ['localhost', 'supabase.co', 'images.unsplash.com', 'via.placeholder.com', 'avatars.githubusercontent.com', 'lh3.googleusercontent.com'],
     remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      },
+      {
+        protocol: 'https',
+        hostname: '**.supabase.co',
+      },
       {
         protocol: 'https',
         hostname: '**.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com',
       },
       {
         protocol: 'https', 
@@ -49,7 +59,6 @@ const nextConfig = {
   
   // Environment variable validation
   env: {
-    CUSTOM_KEY: process.env.CUSTOM_KEY,
     CUSTOM_APP_NAME: 'EchoNow',
     CUSTOM_APP_VERSION: '1.0.0',
   },

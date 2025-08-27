@@ -1,15 +1,18 @@
 import { PrismaClient } from '@prisma/client'
 
+// Extend global object for development hot reloading
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
+// Create Prisma client instance
 export const db =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: ['query'],
+    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   })
 
+// Prevent multiple instances during development
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
 
 // Database helper functions
